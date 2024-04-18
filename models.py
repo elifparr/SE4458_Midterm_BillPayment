@@ -17,5 +17,6 @@ class Bill(db.Model):
     month = db.Column(db.String(20), nullable=False)
     bill_total = db.Column(db.Float, nullable=False)
     payment_status = db.Column(db.String(20), nullable=False)
+    remaining_amount = db.Column(db.Float, nullable=False)
 
 

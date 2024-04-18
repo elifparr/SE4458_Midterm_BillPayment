@@ -36,8 +36,8 @@ def create_sample_data():
             print(f"subscriber with subscriber number {data['subscriber_number']} already exists. Skipping...")
 
     bill_data = [
-        {'subscriber_id': 1, 'month': '1', 'bill_total': 1500, 'payment_status': "false"},
-        {'subscriber_id': 2, 'month': '5', 'bill_total': 2000, 'payment_status': "true"}
+        {'subscriber_id': 1, 'month': '1', 'bill_total': 1500, 'payment_status': "false", 'remaining_amount' : 0},
+        {'subscriber_id': 2, 'month': '5', 'bill_total': 2000, 'payment_status': "true", 'remaining_amount' : 0}
     ]
 
     for data in bill_data:
@@ -109,7 +109,7 @@ class Login(Resource):
     pass
     
 class BankingApp(Resource):
-    @jwt_required()
+    
     def get(self):
         """
         Get unpaid bill details for a subscriber using banking app
@@ -339,10 +339,14 @@ class WebsitePayBill(Resource):
         
         if paid_amount == bill.bill_total:
             bill.payment_status = "true"
-        elif paid_amount < bill.bill_total:
+        elif paid_amount < bill.remaining_amount:
             remaining_amount = bill.bill_total - paid_amount
-            bill.bill_total = remaining_amount
+            bill.remaining_amount = remaining_amount
             bill.payment_status = "false"
+        elif paid_amount == bill.remaining_amount:
+            remaining_amount = bill.remaining_amount - paid_amount
+            bill.remaining_amount = remaining_amount
+            bill.payment_status = "true"
         else:
             error_message = json.dumps({"error": "Paid amount exceeds total bill amount"})
             return error_message, 400, {'Content-Type': 'application/json'}
@@ -395,7 +399,7 @@ class WebsiteAddBillByAdmin(Resource):
             error_message = json.dumps({"error": "User not found or not a subscriber"})
             return error_message, 404, {'Content-Type': 'application/json'}
         
-        new_bill = Bill(subscriber_id=subscriber.id, month=month, bill_total=bill_total, payment_status="false")
+        new_bill = Bill(subscriber_id=subscriber.id, month=month, bill_total=bill_total, payment_status="false", remaining_amount = bill_total)
         db.session.add(new_bill)
         db.session.commit()
         return jsonify({"message": "Bill added successfully"})
